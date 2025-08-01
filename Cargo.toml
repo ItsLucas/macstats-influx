@@ -1,0 +1,13 @@
+[package]
+name = "macstats-influx"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+influxdb2 = "0.5.2"
+macsmc = { path = "macsmc" }
+tokio = { version = "1.0", features = ["full"] }
+futures = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+gethostname = "0.4"
