@@ -17,7 +17,12 @@ pub enum SmcError {
     /// Invalid SMC key format
     InvalidKey(String),
     /// Data parsing error
-    DataError { key: String, data_type: String },
+    DataError { 
+        /// Key
+        key: String, 
+        /// Data type string
+        data_type: String 
+    },
     /// Unknown data type
     UnknownDataType(String),
 }

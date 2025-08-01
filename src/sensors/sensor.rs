@@ -1,26 +1,16 @@
-use macsmc::{Celsius, Percentage, Rpm, Volt, Watt};
+use macsmc::{Celsius, Rpm, Volt, Watt};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub enum SensorValue {
     Temperature(Celsius),
     Speed(Rpm),
-    Percentage(Percentage),
     Voltage(Volt),
     Power(Watt),
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum SensorStatus {
-    Active,
-    Inactive,
-    Error(String),
-}
-
 pub trait Sensor {
     fn name(&self) -> &str;
-
-    fn sensor_type(&self) -> &str;
 
     fn read(&mut self) -> Result<HashMap<String, SensorValue>, String>;
 }
@@ -40,19 +30,11 @@ impl SensorManager {
         self.sensors.push(sensor);
     }
 
-    pub fn get_sensors(&self) -> &Vec<Box<dyn Sensor>> {
-        &self.sensors
-    }
-
-    pub fn find_sensor(&self, name: &str) -> Option<&Box<dyn Sensor>> {
-        self.sensors.iter().find(|sensor| sensor.name() == name)
-    }
-
     pub fn read_all(&mut self) -> Result<HashMap<String, SensorValue>, String> {
         let mut results = HashMap::new();
 
         for sensor in &mut self.sensors {
-            let result = match sensor.read() {
+            let _result = match sensor.read() {
                 Ok(values) => {
                     for (key, value) in values {
                         results.insert(key, value);
@@ -133,9 +115,6 @@ mod tests {
                 }
                 SensorValue::Speed(rpm) => {
                     println!("{}: {} RPM", key, rpm.0);
-                }
-                SensorValue::Percentage(percentage) => {
-                    println!("{}: {}%", key, percentage.0);
                 }
                 SensorValue::Voltage(volt) => {
                     println!("{}: {} V", key, volt.0);

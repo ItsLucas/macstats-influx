@@ -4,7 +4,7 @@ mod sensors;
 
 use config::Config;
 use influx::InfluxUploader;
-use sensors::sensor::{Sensor, SensorManager, SensorValue};
+use sensors::sensor::SensorManager;
 use sensors::*;
 use std::time::Duration;
 use tokio::time;

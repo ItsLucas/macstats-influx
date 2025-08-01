@@ -1,13 +1,12 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
-use crate::sensors::sensor::{Sensor, SensorStatus, SensorValue};
+use crate::sensors::sensor::{SensorValue};
 
 use macsmc::{self, SmcClient, connect};
 
 #[derive(Debug)]
 pub struct Fan {
     name: String,
-    sensor_type: String,
     client: SmcClient,
 }
 
@@ -15,7 +14,6 @@ impl Fan {
     pub fn new() -> Self {
         Self {
             name: "Fan".to_string(),
-            sensor_type: "Fan".to_string(),
             client: connect().expect("Failed to connect to SMC"),
         }
     }
@@ -24,10 +22,6 @@ impl Fan {
 impl crate::sensors::sensor::Sensor for Fan {
     fn name(&self) -> &str {
         &self.name
-    }
-
-    fn sensor_type(&self) -> &str {
-        &self.sensor_type
     }
 
     fn read(&mut self) -> Result<HashMap<String, SensorValue>, String> {

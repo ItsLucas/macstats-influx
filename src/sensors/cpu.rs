@@ -1,13 +1,12 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
-use crate::sensors::sensor::{Sensor, SensorStatus, SensorValue};
+use crate::sensors::sensor::{SensorValue};
 
 use macsmc::{SmcClient, connect};
 
 #[derive(Debug)]
 pub struct CoreTemp {
     name: String,
-    sensor_type: String,
     client: SmcClient,
 }
 
@@ -43,7 +42,6 @@ impl CoreTemp {
     pub fn new() -> Self {
         Self {
             name: "Core Temp".to_string(),
-            sensor_type: "Thermal".to_string(),
             client: connect().expect("Failed to connect to SMC"),
         }
     }
@@ -52,10 +50,6 @@ impl CoreTemp {
 impl crate::sensors::sensor::Sensor for CoreTemp {
     fn name(&self) -> &str {
         &self.name
-    }
-
-    fn sensor_type(&self) -> &str {
-        &self.sensor_type
     }
 
     fn read(&mut self) -> Result<HashMap<String, SensorValue>, String> {

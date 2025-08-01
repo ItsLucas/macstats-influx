@@ -92,7 +92,7 @@ fn u32_to_string(value: u32) -> String {
 
 #[derive(Debug)]
 struct SMCConnection {
-    connection: io_connect_t,
+    connection: IoConnectT,
 }
 
 impl Drop for SMCConnection {
@@ -137,20 +137,20 @@ struct SmcKeyInfo2 {
 }
 
 // FFI types and functions
-type kern_return_t = i32;
-type io_connect_t = *mut c_void;
-type io_service_t = *mut c_void;
-type mach_port_t = *mut c_void;
+type KernReturnT = i32;
+type IoConnectT = *mut c_void;
+type IoServiceT = *mut c_void;
+type MachPortT = *mut c_void;
 
-const KERN_SUCCESS: kern_return_t = 0;
-const RETURN_NOT_PRIVILEGED: kern_return_t = 0x10000000 | 0x2c1;
+const KERN_SUCCESS: KernReturnT = 0;
+const RETURN_NOT_PRIVILEGED: KernReturnT = 0x10000000 | 0x2c1;
 
 #[repr(C)]
 struct SMCKeyData {
     key: u32,
     version: SMCKeyDataVersion,
-    pLimitData: SMCKeyDataLimitData,
-    keyInfo: SMCKeyDataKeyInfo,
+    p_limit_data: SMCKeyDataLimitData,
+    key_info: SMCKeyDataKeyInfo,
     result: u8,
     status: u8,
     data8: u8,
@@ -171,16 +171,16 @@ struct SMCKeyDataVersion {
 struct SMCKeyDataLimitData {
     version: u16,
     length: u16,
-    cpuPLimit: u32,
-    gpuPLimit: u32,
-    memPLimit: u32,
+    cpu_plimit: u32,
+    gpu_plimit: u32,
+    mem_plimit: u32,
 }
 
 #[repr(C)]
 struct SMCKeyDataKeyInfo {
-    dataSize: u32,
-    dataType: u32,
-    dataAttributes: u8,
+    data_size: u32,
+    data_type: u32,
+    data_attributes: u8,
 }
 
 impl Default for SMCKeyData {
@@ -210,27 +210,27 @@ impl Default for SMCKeyDataKeyInfo {
 #[link(name = "IOKit", kind = "framework")]
 extern "C" {
     fn IOServiceMatching(name: *const u8) -> *mut c_void;
-    fn IOServiceGetMatchingService(masterPort: mach_port_t, matching: *mut c_void) -> io_service_t;
+    fn IOServiceGetMatchingService(masterPort: MachPortT, matching: *mut c_void) -> IoServiceT;
     fn IOServiceOpen(
-        service: io_service_t,
-        owningTask: mach_port_t,
+        service: IoServiceT,
+        owningTask: MachPortT,
         type_: u32,
-        connect: *mut io_connect_t,
-    ) -> kern_return_t;
-    fn IOServiceClose(connect: io_connect_t) -> kern_return_t;
+        connect: *mut IoConnectT,
+    ) -> KernReturnT;
+    fn IOServiceClose(connect: IoConnectT) -> KernReturnT;
     fn IOConnectCallStructMethod(
-        connection: io_connect_t,
+        connection: IoConnectT,
         selector: u32,
         input: *const c_void,
         inputSize: usize,
         output: *mut c_void,
         outputSize: *mut usize,
-    ) -> kern_return_t;
-    fn IOObjectRelease(object: io_service_t) -> kern_return_t;
-    fn mach_task_self() -> mach_port_t;
+    ) -> KernReturnT;
+    fn IOObjectRelease(object: IoServiceT) -> KernReturnT;
+    fn mach_task_self() -> MachPortT;
 }
 
-unsafe fn smc_open() -> Result<io_connect_t> {
+unsafe fn smc_open() -> Result<IoConnectT> {
     let matching_dict = IOServiceMatching(b"AppleSMC\0".as_ptr());
     let service = IOServiceGetMatchingService(std::ptr::null_mut(), matching_dict);
 
@@ -238,7 +238,7 @@ unsafe fn smc_open() -> Result<io_connect_t> {
         return Err(SmcError::NotAvailable);
     }
 
-    let mut connection: io_connect_t = std::ptr::null_mut();
+    let mut connection: IoConnectT = std::ptr::null_mut();
     let result = IOServiceOpen(service, mach_task_self(), 0, &mut connection);
     IOObjectRelease(service);
 
@@ -249,7 +249,7 @@ unsafe fn smc_open() -> Result<io_connect_t> {
     Ok(connection)
 }
 
-unsafe fn smc_read_key(connection: io_connect_t, key: u32) -> Result<SmcResult> {
+unsafe fn smc_read_key(connection: IoConnectT, key: u32) -> Result<SmcResult> {
     // First get key info
     let mut input = SMCKeyData::default();
     input.key = key;
@@ -258,8 +258,8 @@ unsafe fn smc_read_key(connection: io_connect_t, key: u32) -> Result<SmcResult> 
     let mut output = SMCKeyData::default();
     smc_call(connection, &input, &mut output)?;
 
-    let data_type = output.keyInfo.dataType;
-    let data_size = output.keyInfo.dataSize;
+    let data_type = output.key_info.data_type;
+    let data_size = output.key_info.data_size;
 
     if data_size > 32 {
         return Err(SmcError::DataError {
@@ -269,7 +269,7 @@ unsafe fn smc_read_key(connection: io_connect_t, key: u32) -> Result<SmcResult> 
     }
 
     // Now read the actual data
-    input.keyInfo.dataSize = data_size;
+    input.key_info.data_size = data_size;
     input.data8 = 5; // SMC_CMD_READ_BYTES
 
     smc_call(connection, &input, &mut output)?;
@@ -281,7 +281,7 @@ unsafe fn smc_read_key(connection: io_connect_t, key: u32) -> Result<SmcResult> 
     })
 }
 
-unsafe fn smc_get_key_info(connection: io_connect_t, key: u32) -> Result<SmcKeyInfo2> {
+unsafe fn smc_get_key_info(connection: IoConnectT, key: u32) -> Result<SmcKeyInfo2> {
     let mut input = SMCKeyData::default();
     input.key = key;
     input.data8 = 9; // SMC_CMD_READ_KEYINFO
@@ -291,12 +291,12 @@ unsafe fn smc_get_key_info(connection: io_connect_t, key: u32) -> Result<SmcKeyI
 
     Ok(SmcKeyInfo2 {
         key,
-        data_type: output.keyInfo.dataType,
-        data_size: output.keyInfo.dataSize,
+        data_type: output.key_info.data_type,
+        data_size: output.key_info.data_size,
     })
 }
 
-unsafe fn smc_get_key_by_index(connection: io_connect_t, index: u32) -> Result<SmcKeyInfo2> {
+unsafe fn smc_get_key_by_index(connection: IoConnectT, index: u32) -> Result<SmcKeyInfo2> {
     let mut input = SMCKeyData::default();
     input.data8 = 8; // SMC_CMD_READ_INDEX
     input.data32 = index;
@@ -306,13 +306,13 @@ unsafe fn smc_get_key_by_index(connection: io_connect_t, index: u32) -> Result<S
 
     Ok(SmcKeyInfo2 {
         key: output.key,
-        data_type: output.keyInfo.dataType,
-        data_size: output.keyInfo.dataSize,
+        data_type: output.key_info.data_type,
+        data_size: output.key_info.data_size,
     })
 }
 
 unsafe fn smc_call(
-    connection: io_connect_t,
+    connection: IoConnectT,
     input: &SMCKeyData,
     output: &mut SMCKeyData,
 ) -> Result<()> {

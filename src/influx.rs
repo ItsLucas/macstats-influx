@@ -56,14 +56,6 @@ impl InfluxUploader {
                         .timestamp(timestamp)
                         .build()?
                 }
-                SensorValue::Percentage(percentage) => {
-                    DataPoint::builder("percentage")
-                        .tag("host", &self.hostname)
-                        .tag("sensor", &sensor_name)
-                        .field("percent", percentage.0 as f64)
-                        .timestamp(timestamp)
-                        .build()?
-                }
                 SensorValue::Voltage(volt) => {
                     DataPoint::builder("voltage")
                         .tag("host", &self.hostname)

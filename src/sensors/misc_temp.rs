@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
-use crate::sensors::sensor::{Sensor, SensorValue};
+use crate::sensors::sensor::{SensorValue};
 
 use macsmc::{SmcClient, connect};
 
 #[derive(Debug)]
 pub struct MiscTemp {
     name: String,
-    sensor_type: String,
     client: SmcClient,
 }
 
@@ -37,7 +36,6 @@ impl MiscTemp {
     pub fn new() -> Self {
         Self {
             name: "Miscellaneous Temperature".to_string(),
-            sensor_type: "Thermal".to_string(),
             client: connect().expect("Failed to connect to SMC"),
         }
     }
@@ -46,10 +44,6 @@ impl MiscTemp {
 impl crate::sensors::sensor::Sensor for MiscTemp {
     fn name(&self) -> &str {
         &self.name
-    }
-
-    fn sensor_type(&self) -> &str {
-        &self.sensor_type
     }
 
     fn read(&mut self) -> Result<HashMap<String, SensorValue>, String> {
@@ -90,7 +84,6 @@ mod tests {
     fn test_misc_temp_sensor_creation() {
         let misc_temp = MiscTemp::new();
         assert_eq!(misc_temp.name(), "Miscellaneous Temperature");
-        assert_eq!(misc_temp.sensor_type(), "Thermal");
     }
 
     #[test]

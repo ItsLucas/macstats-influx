@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
-use crate::sensors::sensor::{Sensor, SensorValue};
+use crate::sensors::sensor::{SensorValue};
 
 use macsmc::{SmcClient, connect};
 
 #[derive(Debug)]
 pub struct Voltage {
     name: String,
-    sensor_type: String,
     client: SmcClient,
 }
 
@@ -29,7 +28,6 @@ impl Voltage {
     pub fn new() -> Self {
         Self {
             name: "Voltage".to_string(),
-            sensor_type: "Voltage".to_string(),
             client: connect().expect("Failed to connect to SMC"),
         }
     }
@@ -38,10 +36,6 @@ impl Voltage {
 impl crate::sensors::sensor::Sensor for Voltage {
     fn name(&self) -> &str {
         &self.name
-    }
-
-    fn sensor_type(&self) -> &str {
-        &self.sensor_type
     }
 
     fn read(&mut self) -> Result<HashMap<String, SensorValue>, String> {
@@ -82,7 +76,6 @@ mod tests {
     fn test_voltage_sensor_creation() {
         let voltage = Voltage::new();
         assert_eq!(voltage.name(), "Voltage");
-        assert_eq!(voltage.sensor_type(), "Voltage");
     }
 
     #[test]
