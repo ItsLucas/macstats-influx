@@ -1,39 +1,23 @@
 use std::collections::HashMap;
 
-use crate::sensors::sensor::{SensorValue};
-
-use macsmc::{SmcClient, connect};
+use crate::sensors::sensor::SensorValue;
 
 #[derive(Debug)]
 pub struct Power {
     name: String,
-    client: SmcClient,
 }
-
-/*
- DESCRIPTION           KEY   VALUE     TYPE
- DC In                 PDTR     4.8 W  flt
- Other 3.3V High Side  PO3R     0.6 W  flt
- Other 5V High Side    PO5R     0.1 W  flt
- System Total          PSTR     4.8 W  flt
-*/
-
-// static array of power sensor keys
-const POWER_KEYS: [&str; 4] = ["PDTR", "PO3R", "PO5R", "PSTR"];
-
-const POWER_SENSOR_NAMES: [&str; 4] = [
-    "DC In",
-    "Other 3.3V High Side",
-    "Other 5V High Side",
-    "System Total",
-];
 
 impl Power {
     pub fn new() -> Self {
         Self {
             name: "Power".to_string(),
-            client: connect().expect("Failed to connect to SMC"),
         }
+    }
+}
+
+impl Default for Power {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -45,29 +29,46 @@ impl crate::sensors::sensor::Sensor for Power {
     fn read(&mut self) -> Result<HashMap<String, SensorValue>, String> {
         let mut ret = HashMap::new();
 
-        for (i, &key) in POWER_KEYS.iter().enumerate() {
-            if let Ok(data) = self.client.read_key(key) {
-                match data.as_power() {
-                    Ok(power) => {
-                        let sensor_name = POWER_SENSOR_NAMES[i].to_string();
-                        ret.insert(sensor_name, SensorValue::Power(power));
-                    }
-                    Err(_) => {
-                        return Err(format!("Failed to read power for key: {}", key));
+        let sensors = lm_sensors::Initializer::default()
+            .initialize()
+            .map_err(|e| format!("Failed to initialize lm-sensors: {}", e))?;
+
+        // 创建匹配 rapl_monitor-virtual-0 的 chip pattern
+        let chip_pattern = sensors
+            .new_chip("rapl_monitor-virtual-0")
+            .map_err(|e| format!("Failed to create chip pattern: {}", e))?;
+
+        for chip in sensors.chip_iter(Some(chip_pattern.as_ref())) {
+            for feature in chip.feature_iter() {
+                let feature_name = feature
+                    .name()
+                    .transpose()
+                    .map_err(|e| format!("Failed to get feature name: {}", e))?
+                    .unwrap_or("N/A");
+
+                // 只读取 power1
+                if feature_name != "power1" {
+                    continue;
+                }
+
+                for sub_feature in feature.sub_feature_iter() {
+                    let sub_name = format!("{}", sub_feature);
+                    // 只读取 average 或 input 类型的功率值
+                    if sub_name.contains("average") || sub_name.contains("input") {
+                        if let Ok(value) = sub_feature.value() {
+                            ret.insert("CPU Power".to_string(), SensorValue::Power(value.raw_value()));
+                            break; // 只需要一个值
+                        }
                     }
                 }
-            } else {
-                return Err(format!("Failed to read key: {}", key));
             }
         }
 
-        Ok(ret)
-    }
-}
+        if ret.is_empty() {
+            return Err("No power sensors found".to_string());
+        }
 
-impl Default for Power {
-    fn default() -> Self {
-        Self::new()
+        Ok(ret)
     }
 }
 
@@ -88,42 +89,21 @@ mod tests {
 
         match power.read() {
             Ok(readings) => {
-                assert_eq!(readings.len(), 4);
+                assert!(readings.contains_key("CPU Power"), "Missing CPU Power sensor");
 
-                let expected_sensors = [
-                    "DC In",
-                    "Other 3.3V High Side",
-                    "Other 5V High Side",
-                    "System Total",
-                ];
-
-                for sensor_name in &expected_sensors {
+                if let Some(SensorValue::Power(power_val)) = readings.get("CPU Power") {
                     assert!(
-                        readings.contains_key(*sensor_name),
-                        "Missing sensor: {}",
-                        sensor_name
+                        *power_val >= 0.0,
+                        "Power value should be non-negative"
                     );
-
-                    if let Some(SensorValue::Power(power_val)) = readings.get(*sensor_name) {
-                        assert!(
-                            *power_val >= macsmc::Watt(0.0),
-                            "Power value should be non-negative for {}",
-                            sensor_name
-                        );
-                        println!("{}: {:.1} W", sensor_name, power_val);
-                    } else {
-                        panic!("Expected power value for {}", sensor_name);
-                    }
+                    println!("CPU Power: {:.1} W", power_val);
+                } else {
+                    panic!("Expected power value for CPU Power");
                 }
             }
             Err(e) => {
                 println!("Warning: Could not read power sensors: {}", e);
             }
         }
-    }
-
-    #[test]
-    fn test_power_keys_and_names_match() {
-        assert_eq!(POWER_KEYS.len(), POWER_SENSOR_NAMES.len());
     }
 }

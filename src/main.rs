@@ -13,13 +13,13 @@ use tokio::time;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting macstats-influx...");
 
-    let config = match Config::load_from_file("config.toml") {
+    let config = match Config::load_from_file("/etc/macstats/config.toml") {
         Ok(config) => {
-            println!("Loaded configuration from config.toml");
+            println!("Loaded configuration from /etc/macstats/config.toml");
             config
         }
         Err(_) => {
-            println!("Failed to load config.toml, trying environment variables...");
+            println!("Failed to load /etc/macstats/config.toml, trying environment variables...");
             Config::load_from_env()?
         }
     };
@@ -59,22 +59,15 @@ fn create_sensor_manager(config: &Config) -> SensorManager {
         println!("Enabled fan speed sensors");
     }
 
-    if config.sensors.enable_gpu {
-        manager.add_sensor(Box::new(gpu::GpuTemp::new()));
-        println!("Enabled GPU sensors");
-    }
-
-    if config.sensors.enable_misc_temp {
-        manager.add_sensor(Box::new(misc_temp::MiscTemp::new()));
-        println!("Enabled miscellaneous temperature sensors");
-    }
-
     if config.sensors.enable_power {
         manager.add_sensor(Box::new(power::Power::new()));
         println!("Enabled power sensors");
     }
 
-    manager.add_sensor(Box::new(voltage::Voltage::new()));
+    if config.sensors.enable_misc {
+        manager.add_sensor(Box::new(misc::MiscTemp::new()));
+        println!("Enabled misc temperature sensors (WiFi, NVMe)");
+    }
 
     manager
 }

@@ -44,7 +44,7 @@ impl InfluxUploader {
                     DataPoint::builder("temperature")
                         .tag("host", &self.hostname)
                         .tag("sensor", &sensor_name)
-                        .field("celsius", temp.0 as f64)
+                        .field("celsius", temp )
                         .timestamp(timestamp)
                         .build()?
                 }
@@ -52,7 +52,7 @@ impl InfluxUploader {
                     DataPoint::builder("fan_speed")
                         .tag("host", &self.hostname)
                         .tag("sensor", &sensor_name)
-                        .field("rpm", rpm.0 as f64)
+                        .field("rpm", rpm)
                         .timestamp(timestamp)
                         .build()?
                 }
@@ -60,7 +60,7 @@ impl InfluxUploader {
                     DataPoint::builder("voltage")
                         .tag("host", &self.hostname)
                         .tag("sensor", &sensor_name)
-                        .field("volts", volt.0 as f64)
+                        .field("volts", volt)
                         .timestamp(timestamp)
                         .build()?
                 }
@@ -68,7 +68,7 @@ impl InfluxUploader {
                     DataPoint::builder("power")
                         .tag("host", &self.hostname)
                         .tag("sensor", &sensor_name)
-                        .field("watts", watt.0 as f64)
+                        .field("watts", watt)
                         .timestamp(timestamp)
                         .build()?
                 }

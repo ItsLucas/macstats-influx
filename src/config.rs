@@ -26,9 +26,8 @@ pub struct CollectionConfig {
 pub struct SensorConfig {
     pub enable_cpu: bool,
     pub enable_fan: bool,
-    pub enable_gpu: bool,
-    pub enable_misc_temp: bool,
     pub enable_power: bool,
+    pub enable_misc: bool,
 }
 
 impl Config {
@@ -60,9 +59,8 @@ impl Config {
         let sensors = SensorConfig {
             enable_cpu: std::env::var("ENABLE_CPU").unwrap_or_else(|_| "true".to_string()).parse()?,
             enable_fan: std::env::var("ENABLE_FAN").unwrap_or_else(|_| "true".to_string()).parse()?,
-            enable_gpu: std::env::var("ENABLE_GPU").unwrap_or_else(|_| "true".to_string()).parse()?,
-            enable_misc_temp: std::env::var("ENABLE_MISC_TEMP").unwrap_or_else(|_| "true".to_string()).parse()?,
             enable_power: std::env::var("ENABLE_POWER").unwrap_or_else(|_| "true".to_string()).parse()?,
+            enable_misc: std::env::var("ENABLE_MISC").unwrap_or_else(|_| "true".to_string()).parse()?,
         };
 
         Ok(Config {
