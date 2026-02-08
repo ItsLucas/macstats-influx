@@ -8,6 +8,8 @@ pub type Rpm = f64;
 pub type Volt = f64;
 /// Power in Watts
 pub type Watt = f64;
+/// Network speed in bytes per second
+pub type BytesPerSec = f64;
 
 #[derive(Debug, Clone)]
 pub enum SensorValue {
@@ -15,6 +17,7 @@ pub enum SensorValue {
     Speed(Rpm),
     Voltage(Volt),
     Power(Watt),
+    NetworkSpeed(BytesPerSec),
 }
 
 pub trait Sensor {
@@ -96,6 +99,9 @@ mod tests {
                         }
                         SensorValue::Power(watt) => {
                             println!("{}: {} W", key, watt);
+                        }
+                        SensorValue::NetworkSpeed(bps) => {
+                            println!("{}: {} B/s", key, bps);
                         }
                     }
                 }

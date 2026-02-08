@@ -69,6 +69,15 @@ fn create_sensor_manager(config: &Config) -> SensorManager {
         println!("Enabled misc temperature sensors (WiFi, NVMe)");
     }
 
+    if config.sensors.enable_network {
+        if let Some(ref net_config) = config.network {
+            manager.add_sensor(Box::new(network::Network::new(&net_config.interface)));
+            println!("Enabled network speed monitoring on {}", net_config.interface);
+        } else {
+            eprintln!("Warning: enable_network is true but [network] config section is missing");
+        }
+    }
+
     manager
 }
 

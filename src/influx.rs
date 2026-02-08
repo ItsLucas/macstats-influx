@@ -72,6 +72,14 @@ impl InfluxUploader {
                         .timestamp(timestamp)
                         .build()?
                 }
+                SensorValue::NetworkSpeed(bps) => {
+                    DataPoint::builder("network_speed")
+                        .tag("host", &self.hostname)
+                        .tag("interface", &sensor_name)
+                        .field("bytes_per_sec", bps)
+                        .timestamp(timestamp)
+                        .build()?
+                }
             };
             points.push(point);
         }

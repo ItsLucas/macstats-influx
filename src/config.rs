@@ -6,6 +6,7 @@ pub struct Config {
     pub influxdb: InfluxDbConfig,
     pub collection: CollectionConfig,
     pub sensors: SensorConfig,
+    pub network: Option<NetworkConfig>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -28,6 +29,13 @@ pub struct SensorConfig {
     pub enable_fan: bool,
     pub enable_power: bool,
     pub enable_misc: bool,
+    #[serde(default)]
+    pub enable_network: bool,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct NetworkConfig {
+    pub interface: String,
 }
 
 impl Config {
@@ -61,12 +69,18 @@ impl Config {
             enable_fan: std::env::var("ENABLE_FAN").unwrap_or_else(|_| "true".to_string()).parse()?,
             enable_power: std::env::var("ENABLE_POWER").unwrap_or_else(|_| "true".to_string()).parse()?,
             enable_misc: std::env::var("ENABLE_MISC").unwrap_or_else(|_| "true".to_string()).parse()?,
+            enable_network: std::env::var("ENABLE_NETWORK").unwrap_or_else(|_| "false".to_string()).parse()?,
         };
+
+        let network = std::env::var("NETWORK_INTERFACE").ok().map(|interface| {
+            NetworkConfig { interface }
+        });
 
         Ok(Config {
             influxdb,
             collection,
             sensors,
+            network,
         })
     }
 }
